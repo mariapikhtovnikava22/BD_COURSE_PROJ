@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 
-class UserInfoSerializer(serializers.Serializer):
+class UserSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     fio = serializers.CharField(max_length=255)
     email = serializers.EmailField()
@@ -11,12 +11,11 @@ class UserInfoSerializer(serializers.Serializer):
     entrance_test = serializers.BooleanField()
 
 
-class RegisterUserSerializer(serializers.Serializer):
+class RoleSerializer(serializers.Serializer):
     id = serializers.IntegerField()
-    fio = serializers.CharField(max_length=255)
-    email = serializers.EmailField()
+    name = serializers.CharField(max_length=128)
 
 
-
-class LoginResponseSerializer(serializers.Serializer):
-    token = serializers.CharField()
+class LevelSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField(max_length=128)

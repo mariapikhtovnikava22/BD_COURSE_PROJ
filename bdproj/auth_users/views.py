@@ -13,6 +13,14 @@ class RegisterUserAPIView(APIView):
         data = request.data
         hashed_password = hash_password(data['password'])
 
+        email_query = "SELECT id FROM users WHERE email = %s"
+        with connection.cursor() as cursor:
+            cursor.execute(email_query, [data['email']])
+            existing_user = cursor.fetchone()
+
+        if existing_user:
+            return JsonResponse({"error": "Email already exists."}, status=400)
+        
         # SQL-запрос для вставки нового пользователя
         query = """
         INSERT INTO users (fio, email, password)
@@ -28,7 +36,8 @@ class RegisterUserAPIView(APIView):
                 ])
                 user = cursor.fetchone()
             except Exception as e:
-                return JsonResponse({"error": "Email already exists or invalid data."}, status=400)
+                return JsonResponse({"error": "Register error"}, status=400)
+        
 
         # Использование сериализатора
         serializer = RegisterUserSerializer({
@@ -89,7 +98,24 @@ class UserInfoAPIView(APIView):
         user_id = result[0]
 
         # Получаем информацию о пользователе
-        user_query = "SELECT id, fio, email, is_active FROM users WHERE id = %s"
+        user_query = """
+                    SELECT 
+                        u.id, 
+                        u.fio, 
+                        u.email, 
+                        u.is_active, 
+                        r.name AS role_name, 
+                        l.name AS level_name, 
+                        u.entrance_test
+                    FROM 
+                        users u
+                    LEFT JOIN 
+                        roles r ON u.role_id = r.id
+                    LEFT JOIN 
+                        levels l ON u.level_id = l.id
+                    WHERE 
+                        u.id = %s;
+                    """
         with connection.cursor() as cursor:
             cursor.execute(user_query, [user_id])
             user = cursor.fetchone()
@@ -103,6 +129,9 @@ class UserInfoAPIView(APIView):
             "fio": user[1],
             "email": user[2],
             "is_active": user[3],
+            "role": user[4],
+            "level": user[5],
+            "entrance_test": user[6]
         })
 
         return Response(serializer.data, status=200)
