@@ -55,6 +55,8 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
 ]
 
 ROOT_URLCONF = 'bdproj.urls'
@@ -134,5 +136,9 @@ api_settings.UNAUTHENTICATED_USER = None
 
 # CORS
 CORS_ORIGIN_ALLOW_ALL = True
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  
+]
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
