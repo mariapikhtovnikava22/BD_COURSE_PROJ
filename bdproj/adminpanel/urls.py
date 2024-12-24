@@ -8,7 +8,7 @@ urlpatterns = [
 
     path('roles/', RoleAPIView.as_view(), name='admin_roles'),
     path('roles/<int:role_id>/', RoleAPIView.as_view(), name='admin_roles_detail'),
-
+    
     path('levels/', LevelAPIView.as_view(), name='admin_levels'),
     path('levels/<int:level_id>/', LevelAPIView.as_view(), name='admin_levels_detail'),
 

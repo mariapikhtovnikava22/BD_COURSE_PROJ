@@ -86,7 +86,7 @@ class LoginUserAPIView(APIView):
         # Использование сериализатора
         serializer = LoginResponseSerializer({"token": token, "role_id": role_id[0]})
         return Response(serializer.data, status=200)
-    
+        
 
 class UserInfoAPIView(APIView):
 
@@ -136,6 +136,7 @@ class UserInfoAPIView(APIView):
     
     @isAuthorized
     def put(self, request):
+        
         user_id = request.user_id
         data = request.data
 
@@ -144,19 +145,13 @@ class UserInfoAPIView(APIView):
             cursor.execute(get_password_query, [user_id])
             user_password = cursor.fetchone()
 
+
         if 'old_password' in data and 'new_password' in data:
             old_password = data['old_password']
-            if not verify_password(old_password, user_password):
+            if not verify_password(old_password, user_password[0]):
                 return JsonResponse({"error": "The old password is incorrect."}, status=400)      
         
     
-        # Проверка уникальности email (если email передан)
-        email = data["email"]
-        if email and not validate_unique_field(
-            "users", "email", email, exclude_id=user_id
-        ):
-            return JsonResponse({"error": "Email already exists."}, status=400)
-
         # Динамическое построение полей для обновления
         update_fields = []
         values = []
@@ -165,6 +160,13 @@ class UserInfoAPIView(APIView):
             update_fields.append("fio = %s")
             values.append(data['fio'])
         if 'email' in data:
+             # Проверка уникальности email (если email передан)
+            email = data["email"]
+            if email and not validate_unique_field(
+                "users", "email", email, exclude_id=user_id
+            ):
+                return JsonResponse({"error": "Email already exists."}, status=400)
+
             update_fields.append("email = %s")
             values.append(data['email'])
 

@@ -139,7 +139,7 @@ class AdminUserAPIView(BaseAPIView):
             return JsonResponse(
                 {"detail": "User with the given ID does not exist."}, status=404
             )
-
+        
         data = request.data
 
         # Проверка уникальности email (если email передан)
