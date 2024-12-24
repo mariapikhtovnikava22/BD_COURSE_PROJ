@@ -1,3 +1,5 @@
+from re import I
+import re
 from django.db import connection
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -5,8 +7,9 @@ from rest_framework import status
 from .utils.generate_token import generate_token
 from .utils.hash_password import hash_password, verify_password
 from django.http import JsonResponse
-from .serializers import UserInfoSerializer, RegisterUserSerializer, LoginResponseSerializer
-
+from .serializers import UpdateUserSerializer, UserInfoSerializer, RegisterUserSerializer, LoginResponseSerializer
+from .utils.required import isAuthorized
+from .utils.check_unique import validate_unique_field
 
 class RegisterUserAPIView(APIView):
     def post(self, request):
@@ -56,7 +59,15 @@ class LoginUserAPIView(APIView):
         with connection.cursor() as cursor:
             cursor.execute(query, [data['email']])
             user = cursor.fetchone()
+        
+        user_id = user[0]
 
+
+        query = "SELECT role_id FROM users WHERE id = %s"
+        with connection.cursor() as cursor:
+            cursor.execute(query, [user_id])
+            role_id = cursor.fetchone()
+        
         if not user or not verify_password(data['password'], user[1]):
             return JsonResponse({"error": "Invalid email or password."}, status=401)
 
@@ -73,29 +84,16 @@ class LoginUserAPIView(APIView):
             token = cursor.fetchone()[0]
 
         # Использование сериализатора
-        serializer = LoginResponseSerializer({"token": token})
+        serializer = LoginResponseSerializer({"token": token, "role_id": role_id[0]})
         return Response(serializer.data, status=200)
     
 
 class UserInfoAPIView(APIView):
+
+    @isAuthorized
     def get(self, request):
-        # Получение токена из заголовка Authorization
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Token '):
-            return JsonResponse({"error": "Authorization token is missing or invalid."}, status=401)
 
-        token = auth_header.split(' ')[1]  # Извлекаем сам токен
-
-        # Проверяем токен в таблице authtoken
-        token_query = "SELECT user_id FROM usertoken WHERE key = %s"
-        with connection.cursor() as cursor:
-            cursor.execute(token_query, [token])
-            result = cursor.fetchone()
-
-        if not result:
-            return JsonResponse({"error": "Invalid token."}, status=401)
-
-        user_id = result[0]
+        user_id = request.user_id
 
         # Получаем информацию о пользователе
         user_query = """
@@ -135,3 +133,67 @@ class UserInfoAPIView(APIView):
         })
 
         return Response(serializer.data, status=200)
+    
+    @isAuthorized
+    def put(self, request):
+        user_id = request.user_id
+        data = request.data
+
+        get_password_query = "SELECT password FROM users WHERE id = %s;"
+        with connection.cursor() as cursor:
+            cursor.execute(get_password_query, [user_id])
+            user_password = cursor.fetchone()
+
+        if 'old_password' in data and 'new_password' in data:
+            old_password = data['old_password']
+            if not verify_password(old_password, user_password):
+                return JsonResponse({"error": "The old password is incorrect."}, status=400)      
+        
+    
+        # Проверка уникальности email (если email передан)
+        email = data["email"]
+        if email and not validate_unique_field(
+            "users", "email", email, exclude_id=user_id
+        ):
+            return JsonResponse({"error": "Email already exists."}, status=400)
+
+        # Динамическое построение полей для обновления
+        update_fields = []
+        values = []
+
+        if 'fio' in data:
+            update_fields.append("fio = %s")
+            values.append(data['fio'])
+        if 'email' in data:
+            update_fields.append("email = %s")
+            values.append(data['email'])
+
+        if 'new_password' in data and 'old_password' in data:
+            hashed_new_password = hash_password(data['new_password'])
+            update_fields.append("password = %s")
+            values.append(hashed_new_password)
+
+        # Формирование SQL-запроса
+        query = f"""
+        UPDATE users
+        SET {', '.join(update_fields)}
+        WHERE id = %s
+        RETURNING id, fio, email;
+        """
+        values.append(user_id)
+
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(query, values)
+                updated_user = cursor.fetchone()
+        except Exception as e:
+            return JsonResponse({"error": f"Unable to update user: {e}"}, status=400)
+
+        # Сериализация данных
+        serializer = UpdateUserSerializer({
+            "id": updated_user[0],
+            "fio": updated_user[1],
+            "email": updated_user[2],
+        })
+
+        return JsonResponse(serializer.data, status=200)

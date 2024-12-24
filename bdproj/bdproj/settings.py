@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'auth_users',
     'adminpanel',
+    'userpanel',
     'rest_framework',
     "corsheaders",
 ]
