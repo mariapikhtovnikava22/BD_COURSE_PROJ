@@ -29,6 +29,9 @@ const Login = () => {
       }
       
       localStorage.setItem('Token', response.token);
+      localStorage.setItem('role_id', response.role_id);
+
+      console.log(localStorage.getItem("role_id"));
 
       setSuccess("Вы успешно вошли!");
       setTimeout(() => {

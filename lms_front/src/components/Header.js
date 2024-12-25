@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { userService } from '../api'; // Импорт вашего API
 import { auth } from '../auth'; // Импорт модуля аутентификации
-import '../styles/App.css'
+import '../styles/App.css';
 
 const Header = () => {
   const navigate = useNavigate();
@@ -12,6 +12,9 @@ const Header = () => {
   const [showLogoutModal, setShowLogoutModal] = useState(false); // Для управления модальным окном
   const [user, setUser] = useState(null); // Инициализируем как null
   const [loading, setLoading] = useState(true); // Для состояния загрузки
+
+  // Проверяем, является ли пользователь администратором
+  const isAdmin = auth.get_user_role() === '1'; // Сравниваем с ID роли админа
 
   // Запрос данных пользователя
   useEffect(() => {
@@ -53,9 +56,9 @@ const Header = () => {
 
   return (
     <>
-      <header className="shadow-sm" style={{ backgroundColor: '#fff' }}>
-        <div className="container">
-          <div className="d-flex justify-content-between align-items-center py-3">
+      <header className="shadow-sm">
+        <div className="container-fluid">
+          <div className="d-flex justify-content-between header-div align-items-center py-3">
             <div className="d-flex align-items-center">
               <Link to="/" style={{ textDecoration: 'none' }}>
                 <h1 className="m-0 me-4" style={{ color: '#5A3E36', fontSize: '24px' }}>EduFlex</h1>
@@ -63,34 +66,29 @@ const Header = () => {
 
               {/* Navigation Links */}
               <nav className="d-flex align-items-center">
-                <Link
-                  to="/courses"
-                  className="me-3"
-                  style={linkStyle('/courses')}
-                >
-                  Каталог курсов
-                </Link>
+                {isAdmin && ( // Если пользователь админ, показываем ссылки для админов
+                  <Link
+                    to="/admin/users"
+                    className="link me-3"
+                  >
+                    Администрование
+                  </Link>
+                )}
                 <Link
                   to="/about"
-                  className="me-3"
+                  className="link me-3"
                   style={linkStyle('/about')}
                 >
-                  О нас
+                  Главная
                 </Link>
                 {isAuthenticated && (
                   <>
                     <Link
                       to="/courses/my"
-                      className="me-3"
+                      className="link me-3"
                       style={linkStyle('/courses/my')}
                     >
-                      Мои курсы
-                    </Link>
-                    <Link
-                      to="/teach"
-                      style={linkStyle('/teach')}
-                    >
-                      Преподавание
+                      Обучающий курс
                     </Link>
                   </>
                 )}
@@ -105,8 +103,7 @@ const Header = () => {
                   ) : (
                     <Link
                       to="/userprofile"
-                      className="d-flex align-items-center me-3 link-style"
-                      
+                      className="link d-flex align-items-center me-3 link-style"
                     >
                       <span style={{ cursor: 'pointer' }}>
                         {user?.fio || 'Неизвестный пользователь'}
@@ -127,7 +124,7 @@ const Header = () => {
                   <div>
                     <Link to="/login">
                       <button
-                        className="btn me-2"
+                        className="btn btn-primary me-2"
                         style={{ backgroundColor: "#5A3E36", color: "#fff", borderRadius: "5px", border: "none" }}
                       >
                         Войти
@@ -135,7 +132,7 @@ const Header = () => {
                     </Link>
                     <Link to="/register">
                       <button
-                        className="btn"
+                        className="btn btn-primary"
                         style={{ backgroundColor: "#D2C4B3", color: "#5A3E36", borderRadius: "5px", border: "none" }}
                       >
                         Регистрация
@@ -174,15 +171,31 @@ const Header = () => {
             <div className="d-flex justify-content-between">
               <button
                 onClick={handleLogout}
-                className="btn btn-danger"
-                style={{ width: "45%" }}
+                className="btn btn-modal-first"
+                style={{
+                  backgroundColor: "#dc3545", // Цвет фона кнопки "Да, хочу выйти"
+                  color: "#fff",              // Цвет текста
+                  border: "none",             // Без рамки
+                  borderRadius: "5px",
+                  width: "45%",
+                  padding: "10px",
+                  cursor: "pointer",
+                }}
               >
                 Да, хочу выйти
               </button>
               <button
                 onClick={() => setShowLogoutModal(false)} // Закрываем окно
-                className="btn btn-secondary"
-                style={{ width: "45%" }}
+                className="btn btn-modal-secondary"
+                style={{
+                  backgroundColor: "#D2C4B3", // Цвет фона кнопки "Нет, остаюсь"
+                  color: "#5A3E36",           // Цвет текста
+                  border: "none",             // Без рамки
+                  borderRadius: "5px",
+                  width: "45%",
+                  padding: "10px",
+                  cursor: "pointer",
+                }}
               >
                 Нет, остаюсь
               </button>
@@ -193,8 +206,5 @@ const Header = () => {
     </>
   );
 };
-
-
-
 
 export default Header;

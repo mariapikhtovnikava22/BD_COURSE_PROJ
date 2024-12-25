@@ -13,16 +13,13 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Georgia', serif;
 }
 
-.btn-primary {
-  background-color: #5A3E36 !important;
-  border: none !important;
-}
-
 .btn-secondary {
   background-color: #D2C4B3 !important;
   color: #5A3E36 !important;
   border: none !important;
 }
+
+
 
 .container {
   max-width: 1200px;
@@ -43,21 +40,74 @@ h1, h2 {
   color: #333;
 }
 
-button {
-  background-color: #007bff;
-  color: white;
-  border: none;
+.table-wrapper {
+  overflow-x: auto; /* Горизонтальный скроллинг */
+  white-space: nowrap; /* Запрет переноса строк */
+}
+
+.table {
+  width: 100%; /* Таблица занимает всю ширину контейнера */
+
+  
+}
+
+.table td, .table th {
+  white-space: nowrap; /* Отключение переноса текста */
+  text-align: center; 
+  padding:7px 20px !important;
+}
+
+
+.btn-primary {
+  background-color: #D2C4B3 !important;
+  color: #5d4b46 !important;
+  border: none !important;
+  border-radius: 5px;
   padding: 10px 20px;
-  border-radius: 4px;
-  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-button:hover {
-  background-color: #0056b3;
+.btn-primary:hover, .btn:hover {
+  background-color: #a29694 !important;
+  color: #f8f9fa !important;
+}
+
+.add-btn{
+
+
+  background-color: #adeca3 !important;
+  color: #343434 !important;
+  border: none !important;
+  align-items: center;
+  border-radius: 5px;
+  padding: 10px 20px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  
+}
+
+.add-btn:hover{
+  
+  background-color: #a8cea2 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 5px;
+  padding: 10px 20px;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 
-.link-style {
+header.shadow-sm {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important; /* Тень только снизу */
+  background-Color: #fff;
+}
+
+
+.header-div
+{
+  padding: 50px;
+}
+
+.link{
   color: #5A3E36;
   text-decoration: none;
   border-bottom: 2px solid transparent;
@@ -65,7 +115,54 @@ button:hover {
   transition: color 0.3s ease, border-bottom-color 0.3s ease; /* Плавный переход */
 }
 
-.link-style:hover {
-  color: #a29694; /* Цвет при наведении */
-
+.link:hover {
+  color: #a29694 !important; /* Цвет при наведении */
 }
+
+.unified-link:hover {
+  color: #a29694; /* Цвет при наведении */
+}
+
+
+.custom-btn {
+  background-color: #5A3E36 !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 5px;
+  padding: 5px 20px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.custom-btn:hover {
+  background-color: #a29694;
+  color: #f8f9fa;
+}
+
+
+.btn-modal-first
+{
+  background-Color: #dc3545;
+  color: #fff;        
+  border: none;         
+  border-Radius: 5px;
+  width: 45%;
+  padding: 10px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.btn-modal-secondary
+{
+  background-Color: #D2C4B3;
+  color: #5A3E36;       
+  border: none;             
+  border-Radius: 5px;
+  width: 45%;
+  padding: 10px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.btn-modal-first:hover, .btn-modal-secondary:hover{
+  background-color: #a29694 !important;
+  color: #f8f9fa !important;
+}
+
