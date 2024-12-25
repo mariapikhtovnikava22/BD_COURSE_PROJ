@@ -6,8 +6,8 @@ class UserSerializer(serializers.Serializer):
     fio = serializers.CharField(max_length=255)
     email = serializers.EmailField()
     is_active = serializers.BooleanField()
-    role = serializers.CharField(max_length=255)
-    level = serializers.CharField(max_length=255)
+    role_id = serializers.IntegerField()
+    level_id = serializers.IntegerField()
     entrance_test = serializers.BooleanField()
 
 

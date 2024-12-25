@@ -13,7 +13,7 @@ const UsersManagement = () => {
     fio: "",
     email: "",
     password: "",
-    role: "",
+    role_id: "",
     is_active: true, // Добавлено поле is_active
   });
 
@@ -40,7 +40,7 @@ const UsersManagement = () => {
         setUsers(data);
         setRoles(rolesData);
       } catch (err) {
-        setError("Ошибка загрузки пользователей");
+        setError(err || "Ошибка загрузки пользователей");
       } finally {
         setLoading(false);
       }
@@ -57,7 +57,7 @@ const UsersManagement = () => {
         fio: userToEdit.fio,
         email: userToEdit.email,
         password: "", // Пароль оставляем пустым
-        role: userToEdit.role,
+        role_id: userToEdit.role_id,
         is_active: userToEdit.is_active, // Устанавливаем is_active из данных пользователя
       });
       setShowModal(true);
@@ -68,7 +68,8 @@ const UsersManagement = () => {
     if (window.confirm(`Вы уверены, что хотите удалить пользователя с ID: ${userId}?`)) {
       try {
         await AdminUserService.deleteUser(userId);
-        setUsers(users.filter((user) => user.id !== userId));
+        setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
+        setFilteredUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
         alert(`Пользователь с ID: ${userId} успешно удалён.`);
       } catch (err) {
         alert(`Ошибка при удалении пользователя с ID: ${userId}.`);
@@ -84,7 +85,7 @@ const UsersManagement = () => {
       fio: "",
       email: "",
       password: "",
-      role: roles.find((role) => role.name.toLowerCase() === "user")?.name || "",
+      role_id: roles.find((role) => role.id === 2)?.id || null,
       is_active: true, // По умолчанию пользователь активен
     });
     setShowModal(true);
@@ -102,34 +103,34 @@ const UsersManagement = () => {
       if (editingUserId) {
         // Обновление пользователя
         await AdminUserService.updateUser(editingUserId, newUser);
-  
-        // Обновляем локальное состояние users
         const updatedUsers = users.map((user) =>
-          user.id === editingUserId ? { ...user, ...newUser } : user
+          user.id === editingUserId
+            ? {
+                ...user,
+                ...newUser,
+                role_id: newUser.role_id,
+              }
+            : user
         );
         setUsers(updatedUsers);
-        setFilteredUsers(updatedUsers.sort((a, b) => a.id - b.id)); // Обновляем filteredUsers
+        setFilteredUsers(updatedUsers);
       } else {
         // Добавление нового пользователя
         const createdUser = await AdminUserService.createUser(newUser);
-  
-        // Добавляем нового пользователя в локальное состояние users
-        const updatedUsers = [...users, createdUser];
-        setUsers(updatedUsers);
-        setFilteredUsers(updatedUsers.sort((a, b) => a.id - b.id)); // Обновляем filteredUsers
+        setUsers((prevUsers) => [...prevUsers, createdUser]);
+        setFilteredUsers((prevUsers) => [...prevUsers, createdUser]);
       }
   
-      setSuccess(
-        editingUserId ? "Пользователь успешно обновлён" : "Пользователь успешно добавлен"
-      );
+      setSuccess(editingUserId ? "Пользователь успешно обновлён" : "Пользователь успешно добавлен");
       setTimeout(() => {
         setShowModal(false);
         setSuccess("");
       }, 1000);
     } catch (err) {
-      setFormError(err || "Ошибка при сохранении пользователя");
+      setFormError("Ошибка при сохранении пользователя.");
     }
   };
+  
   
 
   const handleSearch = (query) => {
@@ -137,17 +138,17 @@ const UsersManagement = () => {
     filterUsers(query, selectedRole, selectedLevel);
   };
 
-  const handleRoleFilter = (role) => {
-    setSelectedRole(role);
-    filterUsers(searchQuery, role, selectedLevel);
+  const handleRoleFilter = (roleId) => {
+    setSelectedRole(roleId);
+    filterUsers(searchQuery, parseInt(roleId), selectedLevel);
   };
 
-  const handleLevelFilter = (level) => {
-    setSelectedLevel(level);
-    filterUsers(searchQuery, selectedRole, level);
+  const handleLevelFilter = (levelId) => {
+    setSelectedLevel(levelId);
+    filterUsers(searchQuery, selectedRole, parseInt(levelId));
   };
 
-  const filterUsers = (query, role, level) => {
+  const filterUsers = (query, roleId, levelId) => {
     let filtered = users;
 
     if (query) {
@@ -156,12 +157,14 @@ const UsersManagement = () => {
       );
     }
 
-    if (role) {
-      filtered = filtered.filter((user) => user.role === role);
-    }
 
-    if (level) {
-      filtered = filtered.filter((user) => user.level === level);
+    if (roleId) {
+      filtered = filtered.filter((user) => parseInt(user.role_id) === parseInt(roleId));
+    }
+    
+
+    if (levelId) {
+      filtered = filtered.filter((user) => user.level_id === levelId);
     }
 
     setFilteredUsers(filtered.sort((a, b) => a.id - b.id)); // Сортировка по ID
@@ -196,21 +199,21 @@ const UsersManagement = () => {
             >
               <option value="">Фильтр по роли</option>
               {roles.map((role) => (
-                <option key={role.id} value={role.name}>
+                <option key={role.id} value={role.id}>
                   {role.name}
                 </option>
               ))}
             </select>
           </div>
           <div className="col-md-4">
-            <select
+              <select
               className="form-control"
               value={selectedLevel}
               onChange={(e) => handleLevelFilter(e.target.value)}
             >
               <option value="">Фильтр по уровню</option>
               {levels.map((level) => (
-                <option key={level.id} value={level.name}>
+                <option key={level.id} value={level.id}>
                   {level.name}
                 </option>
               ))}
@@ -241,9 +244,9 @@ const UsersManagement = () => {
                 <td>{user.id}</td>
                 <td>{user.fio}</td>
                 <td>{user.email}</td>
-                <td>{user.role}</td>
+                <td>{roles.find((role) => role.id === user.role_id)?.name || "Не указана"}</td>
                 <td>{user.is_active ? "Да" : "Нет"}</td>
-                <td>{user.level ? user.level : "Уровень не определен"}</td>
+                <td>{levels.find((level) => level.id == user.level_id)?.name || "Уровень не определен"}</td>
                 <td>{user.entrance_test ? "Пройден" : "Не пройден"}</td>
                 <td>
                   <button
@@ -362,13 +365,13 @@ const UsersManagement = () => {
                 <select
                   id="role"
                   className="form-control"
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                  value={newUser.role_id}
+                  onChange={(e) => setNewUser({ ...newUser, role_id: parseInt(e.target.value) })}
                   required
                 >
                   <option value="">Выберите роль</option>
                   {roles.map((role) => (
-                    <option key={role.id} value={role.name}>
+                    <option key={role.id} value={role.id}>
                       {role.name}
                     </option>
                   ))}

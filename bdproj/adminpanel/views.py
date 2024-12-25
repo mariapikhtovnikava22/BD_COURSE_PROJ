@@ -23,12 +23,10 @@ class AdminUserAPIView(BaseAPIView):
             query = """
             SELECT 
                 u.id, u.fio, u.email, u.is_active, 
-                r.name AS role, 
-                l.name AS level, 
+                u.role_id, 
+                u.level_id, 
                 u.entrance_test
             FROM users u
-            LEFT JOIN roles r ON u.role_id = r.id
-            LEFT JOIN levels l ON u.level_id = l.id
             WHERE u.id = %s
             """
             user = BaseSQLHandler.execute_query(query, [user_id], fetchone=True)
@@ -41,8 +39,8 @@ class AdminUserAPIView(BaseAPIView):
                     "fio": user[1],
                     "email": user[2],
                     "is_active": user[3],
-                    "role": user[4],
-                    "level": user[5],
+                    "role_id": user[4],
+                    "level_id": user[5],
                     "entrance_test": user[6],
                 }
             )
@@ -51,13 +49,11 @@ class AdminUserAPIView(BaseAPIView):
         query = """
         SELECT 
             u.id, u.fio, u.email, u.is_active, 
-            r.name AS role, 
-            l.name AS level, 
+            u.role_id, 
+            u.level_id, 
             u.entrance_test
         FROM users u
-        LEFT JOIN roles r ON u.role_id = r.id
-        LEFT JOIN levels l ON u.level_id = l.id
-        WHERE r.name != 'admin'; 
+        WHERE u.role_id != (SELECT id FROM roles WHERE name = 'admin'); 
         """
         users = BaseSQLHandler.execute_query(query, fetchall=True)
 
@@ -67,8 +63,8 @@ class AdminUserAPIView(BaseAPIView):
                 "fio": user[1],
                 "email": user[2],
                 "is_active": user[3],
-                "role": user[4],
-                "level": user[5],
+                "role_id": user[4],
+                "level_id": user[5],
                 "entrance_test": user[6],
             }
             for user in users
@@ -88,13 +84,10 @@ class AdminUserAPIView(BaseAPIView):
 
         query = """
         INSERT INTO users (fio, email, password, role_id, level_id, is_active, entrance_test)
-        VALUES (%s, %s, %s, 
-                (SELECT id FROM roles WHERE name = %s), 
-                (SELECT id FROM levels WHERE name = %s), 
-                %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
         RETURNING id, fio, email, is_active, 
-                  (SELECT name FROM roles WHERE id = role_id), 
-                  (SELECT name FROM levels WHERE id = level_id), 
+                  role_id, 
+                  level_id, 
                   entrance_test;
         """
         try:
@@ -104,8 +97,8 @@ class AdminUserAPIView(BaseAPIView):
                     data["fio"],
                     data["email"],
                     hashed_password,
-                    data["role"],
-                    data.get("level"),
+                    data["role_id"],
+                    data.get("level_id"),
                     data.get("is_active", True),
                     data.get("entrance_test", False),
                 ],
@@ -120,8 +113,8 @@ class AdminUserAPIView(BaseAPIView):
                 "fio": user[1],
                 "email": user[2],
                 "is_active": user[3],
-                "role": user[4],
-                "level": user[5],
+                "role_id": user[4],
+                "level_id": user[5],
                 "entrance_test": user[6],
             }
         )
@@ -161,13 +154,13 @@ class AdminUserAPIView(BaseAPIView):
             update_fields.append("email = %s")
             values.append(data["email"])
 
-        if "role" in data:
-            update_fields.append("role_id = (SELECT id FROM roles WHERE name = %s)")
-            values.append(data["role"])
+        if "role_id" in data:
+            update_fields.append("role_id = %s")
+            values.append(data["role_id"])
 
-        if "level" in data:
-            update_fields.append("level_id = (SELECT id FROM levels WHERE name = %s)")
-            values.append(data["level"])
+        if "level_id" in data:
+            update_fields.append("level_id = %s")
+            values.append(data["level_id"])
 
         if "is_active" in data:
             update_fields.append("is_active = %s")
@@ -185,8 +178,8 @@ class AdminUserAPIView(BaseAPIView):
         SET {', '.join(update_fields)}
         WHERE id = %s
         RETURNING id, fio, email, is_active, 
-                (SELECT name FROM roles WHERE id = role_id), 
-                (SELECT name FROM levels WHERE id = level_id), 
+                role_id, 
+                level_id, 
                 entrance_test;
         """
         values.append(user_id)
@@ -202,8 +195,8 @@ class AdminUserAPIView(BaseAPIView):
                 "fio": user[1],
                 "email": user[2],
                 "is_active": user[3],
-                "role": user[4],
-                "level": user[5],
+                "role_id": user[4],
+                "level_id": user[5],
                 "entrance_test": user[6],
             }
         )

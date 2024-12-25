@@ -75,7 +75,7 @@ const Header = () => {
                   </Link>
                 )}
                 <Link
-                  to="/about"
+                  to="/"
                   className="link me-3"
                   style={linkStyle('/about')}
                 >
