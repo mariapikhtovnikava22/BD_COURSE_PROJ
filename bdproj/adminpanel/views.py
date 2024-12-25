@@ -57,6 +57,7 @@ class AdminUserAPIView(BaseAPIView):
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.id
         LEFT JOIN levels l ON u.level_id = l.id
+        WHERE r.name != 'admin'; 
         """
         users = BaseSQLHandler.execute_query(query, fetchall=True)
 
