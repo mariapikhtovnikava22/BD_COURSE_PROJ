@@ -24,6 +24,8 @@ const handleErrors = async (response) => {
       throw { detail: errorMessage || "Ошибка сервера" }; // Упаковываем текст в объект
     }
 
+    console.log("Все хорошо");
+
     // Если всё ок, возвращаем данные
     return await response.json();
   } catch (error) {
@@ -106,6 +108,27 @@ export const userService = {
     });
     return handleErrors(response);
 
+  },
+  getUserModules: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/users/usertopicmodules/`, {
+      method: "GET",
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+  },
+  getModuleTest: async (moduleId) => {
+    const response = await fetch(`${API_BASE_URL}/api/users/moduletest/${moduleId}`, {
+      method: "GET",
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+  },
+  SubmitTest: async (moduleId) => {
+    const response = await fetch(`${API_BASE_URL}/api/users/submittestmodule/${moduleId}`, {
+      method: "POST",
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
   },
 };
 

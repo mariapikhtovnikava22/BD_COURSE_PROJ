@@ -7,7 +7,7 @@ from auth_users.utils.hash_password import hash_password
 from django.core.files.storage import FileSystemStorage
 from django.http import JsonResponse
 from .serializers import UserSerializer, RoleSerializer, LevelSerializer
-from .utils.admin_required import admin_required
+from .utils.admin_required import admin_required, isAuthorized
 from .utils.base_api import BaseAPIView
 from .utils.base_sql_handler import BaseSQLHandler
 
@@ -336,7 +336,7 @@ class LevelAPIView(BaseAPIView):
         serializer = LevelSerializer({"id": level[0], "name": level[1]})
         return JsonResponse(serializer.data, status=201)
 
-    @admin_required
+    @isAuthorized
     def get(self, request, level_id=None):
         """
         Получение списка всех уровней или информации о конкретном уровне.
