@@ -7,13 +7,14 @@ import Footer from "../components/Footer";
 
 const LoginPage = () => {
   return (
-    <>
+    <div
+      className="d-flex flex-column min-vh-100" // Новый класс для растяжения контейнера на всю высоту экрана
+      style={{ backgroundColor: "#f9f4ef" }} // Перенесли фон сюда
+    >
       <Header />
       <div
-        className="d-flex justify-content-center align-items-center"
+        className="d-flex justify-content-center align-items-center flex-grow-1" // flex-grow-1 позволяет занять все свободное пространство
         style={{
-          minHeight: "81vh", // Высота контейнера на весь экран
-          backgroundColor: "#f9f4ef",
           padding: "20px", // Отступы для мобильных экранов
         }}
       >
@@ -55,7 +56,7 @@ const LoginPage = () => {
         </div>
       </div>
       <Footer />
-    </>
+    </div>
   );
 };
 

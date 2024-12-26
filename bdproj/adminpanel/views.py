@@ -1870,6 +1870,8 @@ class MaterialsAPIView(BaseAPIView):
         data = request.POST
         file = request.FILES.get("file")
 
+        print(data)
+
         # Обработка файла
         file_url = None
         metadata = None
@@ -1918,7 +1920,7 @@ class MaterialsAPIView(BaseAPIView):
             status=201,
         )
 
-    @admin_required
+
     def get(self, request, material_id=None):
         """
         Получение списка всех материалов или конкретного материала по ID.

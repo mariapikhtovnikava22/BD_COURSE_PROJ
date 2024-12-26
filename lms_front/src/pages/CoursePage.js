@@ -1,9 +1,10 @@
 // src/User/pages/UserTestPage.jsx
 
 import React, { useState, useEffect } from "react";
-import { userService } from "../api"; 
+import { AdminLevelsService, AdminMaterialsService, userService } from "../api"; 
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import BASE_BACKEND_URL from "../config";
 
 const UserTestPage = () => {
   const [loading, setLoading] = useState(true);
@@ -26,6 +27,10 @@ const UserTestPage = () => {
   // Ответы на тесты конкретных модулей:
   // В формате { [moduleId]: { [questionId]: selectedOptionId }, ... }
   const [moduleAnswers, setModuleAnswers] = useState({});
+
+  // ===== Материалы =====
+  const [expandedTopicIds, setExpandedTopicIds] = useState([]); // Track expanded topics
+  const [materialsByTopic, setMaterialsByTopic] = useState({});   // Store materials per topic
 
   // --------------------------------------------------------------------
   // 1) Загрузка первоначальных данных при монтировании
@@ -159,7 +164,7 @@ const UserTestPage = () => {
     }
 
     try {
-      console.log(formatted)
+
       // Отправляем результаты теста модуля
       const response = await userService.SubmitTest(moduleId, { answers: formatted });
       setSuccess(`Тест модуля #${moduleId} успешно завершён!`);
@@ -177,6 +182,33 @@ const UserTestPage = () => {
       setFormError(err.message || "Не удалось отправить тест модуля. Попробуйте снова.");
     }
   };
+
+  // --------------------------------------------------------------------
+  // 4) Логика раскрытия тем и загрузки материалов
+  // --------------------------------------------------------------------
+  // Переключение раскрытия материалов темы
+   const toggleTopicMaterials = async (topicId) => {
+      if (expandedTopicIds.includes(topicId)) {
+        setExpandedTopicIds((prev) => prev.filter((id) => id !== topicId));
+        return;
+      }
+  
+      setExpandedTopicIds((prev) => [...prev, topicId]);
+  
+      if (!materialsByTopic[topicId]) {
+        try {
+          const materials = await AdminMaterialsService.getAllMaterials();
+          const topicMaterials = materials.filter((mat) => mat.topic_id === topicId);
+          setMaterialsByTopic((prev) => ({
+            ...prev,
+            [topicId]: topicMaterials,
+          }));
+        } catch (err) {
+          console.error("Ошибка при загрузке материалов:", err);
+          setFormError("Не удалось загрузить материалы.");
+        }
+      }
+    };
 
   // --------------------------------------------------------------------
   // Рендер
@@ -267,15 +299,56 @@ const UserTestPage = () => {
                       <div>
                         <h6>Темы:</h6>
                         {module.topics && module.topics.length > 0 ? (
-                          module.topics.map((topic) => (
-                            <div key={topic.id} className="card mb-3">
-                              <div className="card-body">
-                                <strong>{topic.name}</strong>
-                                <p>{topic.description}</p>
-                                {/* Тут можно делать дополнительные вложенные раскрытия, если нужно */}
+                          module.topics.map((topic) => {
+                            const isTopicExpanded = expandedTopicIds.includes(topic.id);
+                            const topicMaterials = materialsByTopic[topic.id] || [];
+
+                            return (
+                              <div key={topic.id} className="card mb-3">
+                                <div className="card-body">
+                                  <div className="d-flex justify-content-between align-items-center">
+                                    <div>
+                                      <strong>{topic.name}</strong>
+                                      <p>{topic.description}</p>
+                                    </div>
+                                    <button
+                                      className="btn btn-sm btn-outline-secondary"
+                                      onClick={() => toggleTopicMaterials(topic.id)}
+                                    >
+                                      {isTopicExpanded ? "Скрыть материалы" : "Показать материалы"}
+                                    </button>
+                                  </div>
+
+                                  {/* Список материалов */}
+                                  {isTopicExpanded && (
+                                    <div className="mt-3">
+                                      <h6>Материалы:</h6>
+                                      {materialsByTopic[topic.id]?.length ? (
+                                        materialsByTopic[topic.id].map((material) => (
+                                          <div key={material.id} className="border p-2 mb-2 rounded">
+                                            <p><strong>Контент:</strong> {material.content}</p>
+                                            {material.file_url ? (
+                                            <a
+                                              href={`${BASE_BACKEND_URL}${material.file_url}`}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                            >
+                                              Скачать файл
+                                            </a>
+                                          ) : (
+                                            <span className="text-muted">Файл отсутствует</span>
+                                          )}
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <p className="text-muted">Материалы отсутствуют.</p>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          ))
+                            );
+                          })
                         ) : (
                           <p>Темы отсутствуют.</p>
                         )}
@@ -323,7 +396,7 @@ const UserTestPage = () => {
                           </div>
                         ) : (
                           <button
-                            className="btn btn-primary"
+                            className="btn btn-primary mt-3"
                             onClick={() => handleLoadModuleTest(module.id)}
                           >
                             Загрузить тест модуля

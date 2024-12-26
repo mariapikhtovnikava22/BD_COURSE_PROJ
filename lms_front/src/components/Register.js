@@ -41,7 +41,7 @@ const Register = () => {
 
       setSuccess("Вы успешно зарегистрировались!");
       setTimeout(() => {
-        navigate('/');
+        navigate('/login');
       }, 1000);
     } catch (error) {
       setError(error.response?.data?.detail || error.response?.data?.email || "Ошибка регистрации. Проверьте данные и попробуйте снова.");

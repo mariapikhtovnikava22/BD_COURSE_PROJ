@@ -301,6 +301,8 @@ export const AdminLevelsService = {
 };
 
 export const AdminCategoriesMaterialService = {
+
+  
   // Получение всех категорий материалов
   getAllCategories: async () => {
     const response = await fetch(`${API_BASE_URL}/api/admin/categoriesmaterial/`, {
@@ -656,6 +658,55 @@ export const AdminQuestionService = {
   getAllQuestions: async () => {
     const response = await fetch(`${API_BASE_URL}/api/admin/questions/`, {
       method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+  },
+};
+
+export const AdminMaterialsService = {
+  // Получить все материалы (опционально, если нужно)
+  getAllMaterials: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/materials/`, {
+      method: "GET",
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+  },
+
+  // Получить материал по ID
+  getMaterialById: async (materialId) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/materials/${materialId}/`, {
+      method: "GET",
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+  },
+
+  // Создать новый материал
+  createMaterial: async (materialData) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/materials/`, {
+      method: "POST",
+      headers: getHeaders(false), // true => JSON
+      body: materialData,
+    });
+    return handleErrors(response);
+  },
+
+  // Обновить существующий материал
+  updateMaterial: async (materialId, materialData) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/materials/${materialId}/`, {
+      method: "PUT",
+      headers: getHeaders(true),
+      body: materialData,
+    });
+    return handleErrors(response);
+  },
+
+  // Удалить материал
+  deleteMaterial: async (materialId) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/materials/${materialId}/`, {
+      method: "DELETE",
       headers: getHeaders(),
     });
     return handleErrors(response);
