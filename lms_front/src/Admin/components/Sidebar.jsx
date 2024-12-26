@@ -79,7 +79,19 @@ const Sidebar = () => {
             fontWeight: isActive("/admin/corse") ? "bold" : "normal",
           }}
         >
-          Создание курса
+          Создание модулей
+        </Link>
+        <Link
+          to="/admin/tests"
+          style={{
+            display: "block",
+            color: isActive("/admin/tests") ? "#D2C4B3" : "#fff",
+            textDecoration: "none",
+            marginBottom: "10px",
+            fontWeight: isActive("/admin/tests") ? "bold" : "normal",
+          }}
+        >
+          Создание тестов
         </Link>
       </nav>
     </div>

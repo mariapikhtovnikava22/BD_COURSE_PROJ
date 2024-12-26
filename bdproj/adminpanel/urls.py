@@ -21,21 +21,27 @@ urlpatterns = [
     path('topics/', TopicAPIView.as_view(), name='admin_topic'),
     path('topics/<int:topic_id>/', TopicAPIView.as_view(), name='admin_topic_detail'),
 
+    path('addmoduletopic/', BulkModuleAPIView.as_view(), name='addmoduletopic'),
+    path('addtest/', ModuleTestQuestionsAPIView.as_view(), name='addtest'),
+
     path('tests/', TestAPIView.as_view(), name='admin_test'),
     path('tests/<int:test_id>/', TestAPIView.as_view(), name='admin_test_detail'),
 
-    path('qestions/', QuestionsAPIView.as_view(), name='admin_question'),
+    path('questions/', QuestionsAPIView.as_view(), name='admin_question'),
     path('questions/<int:question_id>/', QuestionsAPIView.as_view(), name='admin_questuion_detail'),
 
     path('usertest/', UserTestProgressAPIView.as_view(), name='admin_usertest'),
     path('usertest/<int:progress_id>/', UserTestProgressAPIView.as_view(), name='admin_usertest_detail'),
 
-    path('option/', OptionsAPIView.as_view(), name='admin_option'),
-    path('option/<int:option_id>/', OptionsAPIView.as_view(), name='admin_option_detail'),
+    path('options/', OptionsAPIView.as_view(), name='admin_option'),
+    path('options/<int:option_id>/', OptionsAPIView.as_view(), name='admin_option_detail'),
 
     path('testquestion/', TestsQuestionsAPIView.as_view(), name='admin_testquestion'),
+    path('testquestion/<int:test_id>/', TestsQuestionsAPIView.as_view(), name='admin_testquestion'),
+    
 
     path('optionquestion/', QuestionOptionsAPIView.as_view(), name='admin_optionquestion'),
+    path('optionquestion/<int:link_id>/', QuestionOptionsAPIView.as_view(), name='admin_optionquestion'),
 
     path('materials/', MaterialsAPIView.as_view(), name='admin_materials'),
     path('materials/<int:material_id>/', MaterialsAPIView.as_view(), name='admin_materials'),

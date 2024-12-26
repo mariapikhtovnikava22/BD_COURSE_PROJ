@@ -133,7 +133,7 @@ class AdminUserAPIView(BaseAPIView):
             return JsonResponse(
                 {"detail": "User with the given ID does not exist."}, status=404
             )
-        
+
         data = request.data
 
         # Проверка уникальности email (если email передан)
@@ -508,6 +508,89 @@ class CategoryMaterialAPIView(BaseAPIView):
         return JsonResponse({"detail": "Category deleted successfully."}, status=200)
 
 
+class BulkModuleAPIView(BaseAPIView):
+    @admin_required
+    def post(self, request):
+        """
+        Массовое добавление модулей с темами из JSON-файла.
+        """
+        data = request.data  # Предполагаем, что данные приходят в формате JSON.
+
+        if not isinstance(data, list):
+            return JsonResponse(
+                {"error": "Data should be a list of modules with topics."}, status=400
+            )
+
+        created_modules = []
+        try:
+            for module in data:
+                module_name = module.get("name")
+                module_description = module.get("description", "")
+                module_level_id = module.get("level_id")
+
+                # Проверка обязательных полей
+                if not module_name or not module_level_id:
+                    return JsonResponse(
+                        {"error": f"Module name and level_id are required: {module}"},
+                        status=400,
+                    )
+
+                # Вставка модуля
+                module_query = """
+                INSERT INTO modules (name, description, level_id)
+                VALUES (%s, %s, %s)
+                RETURNING id, name, description, level_id;
+                """
+                created_module = BaseSQLHandler.execute_query(
+                    module_query,
+                    [module_name, module_description, module_level_id],
+                    fetchone=True,
+                )
+
+                module_id = created_module[0]
+                created_modules.append(
+                    {
+                        "id": created_module[0],
+                        "name": created_module[1],
+                        "description": created_module[2],
+                        "level_id": created_module[3],
+                    }
+                )
+
+                # Добавление тем, если они указаны
+                topics = module.get("topics", [])
+                for topic in topics:
+                    topic_name = topic.get("name")
+                    topic_description = topic.get("description", "")
+
+                    # Проверка обязательных полей темы
+                    if not topic_name:
+                        return JsonResponse(
+                            {"error": f"Topic name is required: {topic}"}, status=400
+                        )
+
+                    topic_query = """
+                    INSERT INTO topics (name, description, module_id)
+                    VALUES (%s, %s, %s);
+                    """
+                    BaseSQLHandler.execute_query(
+                        topic_query, [topic_name, topic_description, module_id]
+                    )
+
+        except Exception as e:
+            return self.handle_database_error(
+                "Failed to bulk add modules and topics", e
+            )
+
+        return JsonResponse(
+            {
+                "detail": "Modules and topics added successfully.",
+                "modules": created_modules,
+            },
+            status=201,
+        )
+
+
 class ModuleAPIView(BaseAPIView):
     @admin_required
     def post(self, request):
@@ -552,9 +635,8 @@ class ModuleAPIView(BaseAPIView):
         """
         if module_id:
             query = """
-            SELECT m.id, m.name, m.description, l.name AS level_name  
+            SELECT m.id, m.name, m.description, m.level_id  
             FROM modules AS m
-            LEFT JOIN levels AS l ON m.level_id = l.id
             WHERE m.id = %s;
             """
             module = BaseSQLHandler.execute_query(query, [module_id], fetchone=True)
@@ -567,15 +649,14 @@ class ModuleAPIView(BaseAPIView):
                     "id": module[0],
                     "name": module[1],
                     "description": module[2],
-                    "level_name": module[3],
+                    "level_id": module[3],  # Возвращаем level_id
                 },
                 status=200,
             )
 
         query = """
-        SELECT m.id, m.name, m.description, l.name AS level_name  
+        SELECT m.id, m.name, m.description, m.level_id  
         FROM modules AS m
-        LEFT JOIN levels AS l ON m.level_id = l.id
         ORDER BY m.id;
         """
         modules = BaseSQLHandler.execute_query(query, fetchall=True)
@@ -584,7 +665,7 @@ class ModuleAPIView(BaseAPIView):
                 "id": module[0],
                 "name": module[1],
                 "description": module[2],
-                "level_name": module[3],
+                "level_id": module[3],  # Возвращаем level_id
             }
             for module in modules
         ]
@@ -828,6 +909,17 @@ class TestAPIView(BaseAPIView):
         """
         data = request.data
 
+        module_id = data.get("module_id", None)
+
+        # Проверка, существует ли уже тест с таким module_id
+        if module_id:
+            existing_test_query = """
+            SELECT id FROM tests WHERE module_id = %s;
+            """
+            existing_test = BaseSQLHandler.execute_query(existing_test_query, [data["module_id"]], fetchone=True)
+            if existing_test:
+                return JsonResponse({"error": f"Test with module_id {data['module_id']} already exists."}, status=400)
+
         query = """
         INSERT INTO tests (name, module_id)
         VALUES (%s, %s)
@@ -843,7 +935,7 @@ class TestAPIView(BaseAPIView):
         return JsonResponse(
             {"id": test[0], "name": test[1], "module_id": test[2]}, status=201
         )
-
+    
     @admin_required
     def get(self, request, test_id=None):
         """
@@ -851,9 +943,8 @@ class TestAPIView(BaseAPIView):
         """
         if test_id:
             query = """
-            SELECT t.id, t.name, m.name AS module_name
+            SELECT t.id, t.name, t.module_id
             FROM tests AS t
-            LEFT JOIN modules AS m ON t.module_id = m.id
             WHERE t.id = %s;
             """
             test = BaseSQLHandler.execute_query(query, [test_id], fetchone=True)
@@ -861,19 +952,19 @@ class TestAPIView(BaseAPIView):
                 return JsonResponse({"error": "Test not found."}, status=404)
 
             return JsonResponse(
-                {"id": test[0], "name": test[1], "module_name": test[2]}, status=200
+                {"id": test[0], "name": test[1], "module_id": test[2]}, status=200
             )
 
         query = """
-        SELECT t.id, t.name, m.name AS module_name
-        FROM tests AS t
-        LEFT JOIN modules AS m ON t.module_id = m.id;
+        SELECT t.id, t.name, t.module_id
+        FROM tests AS t;
         """
         tests = BaseSQLHandler.execute_query(query, fetchall=True)
         response = [
-            {"id": test[0], "name": test[1], "module_name": test[2]} for test in tests
+            {"id": test[0], "name": test[1], "module_id": test[2]} for test in tests
         ]
         return JsonResponse(response, safe=False, status=200)
+
 
     @admin_required
     def put(self, request, test_id=None):
@@ -887,6 +978,15 @@ class TestAPIView(BaseAPIView):
             return JsonResponse({"error": "Test not found."}, status=404)
 
         data = request.data
+
+        # Проверка, существует ли уже тест с таким module_id (кроме текущего теста)
+        existing_test_query = """
+        SELECT id FROM tests WHERE module_id = %s AND id != %s;
+        """
+        existing_test = BaseSQLHandler.execute_query(existing_test_query, [data["module_id"], test_id], fetchone=True)
+        if existing_test:
+            return JsonResponse({"error": f"Test with module_id {data['module_id']} already exists."}, status=400)
+
         update_fields = []
         values = []
 
@@ -940,6 +1040,125 @@ class TestAPIView(BaseAPIView):
             return self.handle_database_error("Unable to delete test", e)
 
         return JsonResponse({"detail": "Test deleted successfully."}, status=200)
+
+
+class ModuleTestQuestionsAPIView(BaseAPIView):
+    @admin_required
+    def post(self, request):
+        """
+        Создание теста с вопросами для указанного модуля.
+        """
+        data = request.data
+        module_id = data.get("module_id")
+        test_name = data.get("test_name")
+        questions = data.get("questions", [])
+
+        if not module_id or not test_name:
+            return JsonResponse({"error": "module_id and test_name are required"}, status=400)
+
+        try:
+            # Проверяем, существует ли модуль
+            module_check_query = "SELECT id FROM modules WHERE id = %s;"
+            module_exists = BaseSQLHandler.execute_query(module_check_query, [module_id], fetchone=True)
+            if not module_exists:
+                return JsonResponse({"error": "Module not found"}, status=404)
+
+            # Создаём тест
+            create_test_query = """
+            INSERT INTO tests (name, module_id)
+            VALUES (%s, %s)
+            RETURNING id, name, module_id;
+            """
+            created_test = BaseSQLHandler.execute_query(
+                create_test_query, [test_name, module_id], fetchone=True
+            )
+            test_id = created_test[0]
+
+            print("Test create")
+
+            created_questions = []
+
+            # Обрабатываем каждый вопрос
+            for question in questions:
+                question_text = question.get("question_text")
+                topic_id = question.get("topic_id")
+                options = question.get("options", [])
+                if not question_text:
+                    return JsonResponse({"error": "Each question must have 'question_text'"}, status=400)
+
+                # Создаём вопрос
+                create_question_query = """
+                INSERT INTO questions (name, topic_id, correct_answer_id)
+                VALUES (%s, %s, NULL)
+                RETURNING id, name;
+                """
+                created_question = BaseSQLHandler.execute_query(
+                    create_question_query,
+                    [question_text, topic_id],
+                    fetchone=True
+                )
+
+                question_id = created_question[0]
+
+                # Связываем вопрос с тестом
+                link_test_question_query = """
+                INSERT INTO testsquestions (test_id, question_id)
+                VALUES (%s, %s);
+                """
+                BaseSQLHandler.execute_query(link_test_question_query, [test_id, question_id])
+
+                # Создаём варианты ответа
+                created_options = []
+                for option in options:
+                    value = option.get("value")
+                    is_correct = option.get("is_correct", False)
+
+                    if not value:
+                        continue
+
+                    create_option_query = """
+                    INSERT INTO optionss (value)
+                    VALUES (%s)
+                    RETURNING id, value;
+                    """
+                    created_option = BaseSQLHandler.execute_query(create_option_query, [value], fetchone=True)
+
+                    option_id = created_option[0]
+                    created_options.append({"id": option_id, "value": created_option[1], "is_correct": is_correct})
+
+                    # Связываем вопрос с вариантом
+                    create_question_option_query = """
+                    INSERT INTO questionoptions (question_id, option_id)
+                    VALUES (%s, %s);
+                    """
+                    BaseSQLHandler.execute_query(create_question_option_query, [question_id, option_id])
+
+                    # Если вариант правильный, обновляем поле correct_answer_id
+                    if is_correct:
+                        update_correct_answer_query = """
+                        UPDATE questions
+                        SET correct_answer_id = %s
+                        WHERE id = %s;
+                        """
+                        BaseSQLHandler.execute_query(update_correct_answer_query, [option_id, question_id])
+
+                created_questions.append({
+                    "id": question_id,
+                    "name": created_question[1],
+                    "options": created_options
+                })
+
+            return JsonResponse({
+                "test": {
+                    "id": test_id,
+                    "name": created_test[1],
+                    "module_id": created_test[2]
+                },
+                "created_questions": created_questions
+            }, status=201)
+
+        except Exception as e:
+            return self.handle_database_error("Unable to create test and questions", e)
 
 
 class UserTestProgressAPIView(BaseAPIView):
@@ -1370,39 +1589,80 @@ class TestsQuestionsAPIView(BaseAPIView):
         )
 
     @admin_required
-    def get(self, request, link_id=None):
+    def get(self, request, test_id=None):
         """
         Получение информации о связи вопроса с тестом.
+        Если передан link_id — возвращает конкретную связь.
+        Если передан test_id — возвращает все вопросы для указанного теста.
+        Если параметры не переданы — возвращает все связи.
         """
-        if link_id:
-            query = """
-            SELECT tq.id, t.name AS test_name, q.name AS question_name
-            FROM testsquestions tq
-            JOIN tests t ON tq.test_id = t.id
-            JOIN questions q ON tq.question_id = q.id
-            WHERE tq.id = %s;
-            """
-            link = BaseSQLHandler.execute_query(query, [link_id], fetchone=True)
-            if not link:
-                return JsonResponse({"error": "Link not found."}, status=404)
-
-            return JsonResponse(
-                {"id": link[0], "test_name": link[1], "question_name": link[2]},
-                status=200,
-            )
+        if not test_id:
+            return JsonResponse({"error": "test_id is required"}, status=400)
 
         query = """
-        SELECT tq.id, t.name AS test_name, q.name AS question_name
-        FROM testsquestions tq
-        JOIN tests t ON tq.test_id = t.id
-        JOIN questions q ON tq.question_id = q.id;
+        SELECT tq.id AS link_id,  -- Добавляем ID связи
+            q.id AS question_id,
+            q.name AS question_name,
+            q.topic_id,
+            q.correct_answer_id,
+            o.id AS option_id,
+            o.value AS option_value
+        FROM   testsquestions AS tq
+        JOIN   questions      AS q  ON tq.question_id = q.id
+        LEFT JOIN questionoptions AS qo ON qo.question_id = q.id
+        LEFT JOIN optionss    AS o  ON qo.option_id = o.id
+        WHERE  tq.test_id = %s
+        ORDER BY q.id, o.id;
         """
-        links = BaseSQLHandler.execute_query(query, fetchall=True)
-        response = [
-            {"id": link[0], "test_name": link[1], "question_name": link[2]}
-            for link in links
-        ]
-        return JsonResponse(response, safe=False, status=200)
+
+        try:
+            rows = BaseSQLHandler.execute_query(query, [test_id], fetchall=True)
+        except Exception as e:
+            return JsonResponse({"error": f"Database error: {e}"}, status=500)
+
+        # rows будет списком кортежей вида:
+        # [
+        #   (link_id, question_id, question_name, topic_id, correct_answer_id, option_id, option_value),
+        #   ...
+        # ]
+        # Нужно сгруппировать это по question_id.
+
+        questions_map = {}  # словарь { question_id: { ...question_data..., options: [...] } }
+
+        for row in rows:
+            (link_id,
+            q_id,
+            q_name,
+            q_topic_id,
+            q_correct_answer_id,
+            opt_id,
+            opt_value) = row
+
+            # Если вопрос ещё не встречался, создаём для него запись:
+            if q_id not in questions_map:
+                questions_map[q_id] = {
+                    "id": q_id,
+                    "name": q_name,
+                    "topic_id": q_topic_id,
+                    "correct_answer_id": q_correct_answer_id,
+                    "link_id": link_id,  # Добавляем link_id в структуру вопроса
+                    "options": []
+                }
+
+            # Если у вопроса есть вариант (opt_id не NULL),
+            # добавим его в список options:
+            if opt_id:
+                questions_map[q_id]["options"].append({
+                    "id": opt_id,
+                    "value": opt_value,
+                    "is_correct": (opt_id == q_correct_answer_id)
+                })
+
+        # Преобразуем questions_map.values() к списку
+        questions_list = list(questions_map.values())
+
+        return JsonResponse(questions_list, safe=False, status=200)
+
 
     @admin_required
     def put(self, request, link_id=None):
@@ -1453,10 +1713,12 @@ class TestsQuestionsAPIView(BaseAPIView):
         )
 
     @admin_required
-    def delete(self, request, link_id=None):
+    def delete(self, request, test_id=None):
         """
         Удаление связи вопроса с тестом по ID.
         """
+        link_id = test_id
+
         if not link_id:
             return JsonResponse({"error": "Link ID is required in URL."}, status=400)
 

@@ -1,6 +1,7 @@
 const API_BASE_URL = 'http://localhost:8000';
 
 const handleErrors = async (response) => {
+  console.log(response);
   try {
     // Если HTTP-статус не 2xx
     if (!response.ok) {
@@ -386,4 +387,227 @@ export const AdminTopicsService = {
   },
 };
 
+export const AdminTestService = {
 
+  // Получение всех тестов
+  getAllTests: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/tests/`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+  },
+
+  // Получение теста по ID
+  getTestById: async (testId) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/tests/${testId}/`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+  },
+
+  // Создание нового теста
+  createTest: async (testData) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/tests/`, {
+      method: 'POST',
+      headers: getHeaders(true),
+      body: JSON.stringify(testData),
+    });
+    return handleErrors(response);
+  },
+
+  // Обновление теста по ID
+  updateTest: async (testId, testData) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/tests/${testId}/`, {
+      method: 'PUT',
+      headers: getHeaders(true),
+      body: JSON.stringify(testData),
+    });
+    return handleErrors(response);
+  },
+
+  // Удаление теста по ID
+  deleteTest: async (testId) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/tests/${testId}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+  },
+};
+
+export const AdminOptionService = {
+
+  // Получение всех вариантов ответов
+  getAllOptions: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/options/`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+  },
+
+  // Получение варианта ответа по ID
+  getOptionById: async (optionId) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/options/${optionId}/`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+  },
+
+  // Создание нового варианта ответа
+  createOption: async (optionData) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/options/`, {
+      method: 'POST',
+      headers: getHeaders(true),
+      body: JSON.stringify(optionData),
+    });
+    return handleErrors(response);
+  },
+
+  // Обновление варианта ответа по ID
+  updateOption: async (optionId, optionData) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/options/${optionId}/`, {
+      method: 'PUT',
+      headers: getHeaders(true),
+      body: JSON.stringify(optionData),
+    });
+    return handleErrors(response);
+  },
+
+  // Удаление варианта ответа по ID
+  deleteOption: async (optionId) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/options/${optionId}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+  },
+};
+
+export const AdminTestQuestionService = {
+  // Связь теста с вопросом
+  linkTestToQuestion: async (linkData) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/testquestion/`, {
+      method: 'POST',
+      headers: getHeaders(true),
+      body: JSON.stringify(linkData),
+    });
+    return handleErrors(response);
+  },
+
+  // Получение связей между тестами и вопросами
+  getAllTestQuestions: async (testId) => {
+    
+    const response = await fetch(
+      `${API_BASE_URL}/api/admin/testquestion/${testId}/`,
+      {
+        method: 'GET',
+        headers: getHeaders(),
+      }
+    );
+    return handleErrors(response);
+  },
+
+  // Удаление связи теста с вопросом по ID
+  deleteTestQuestion: async (linkId) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/testquestion/${linkId}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+  },
+
+  // Получение вопросов по test_id
+  getTestQuestionsByTestId: async (testId) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/testquestion/?test_id=${testId}`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+  },
+};
+
+
+export const AdminQuestionOptionService = {
+
+  // Связь вопроса с вариантом ответа
+  linkQuestionToOption: async (linkData) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/optionquestion/`, {
+      method: 'POST',
+      headers: getHeaders(true),
+      body: JSON.stringify(linkData),
+    });
+    return handleErrors(response);
+  },
+
+  // Получение всех связей между вопросами и вариантами ответов
+  getAllQuestionOptions: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/optionquestion/`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+  },
+
+  // Удаление связи вопроса с вариантом ответа по ID
+  deleteQuestionOption: async (linkId) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/optionquestion/${linkId}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+  },
+};
+
+export const AdminQuestionService = {
+  
+  // Создание нового вопроса
+  createQuestion: async (questionData) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/questions/`, {
+      method: 'POST',
+      headers: getHeaders(true),
+      body: JSON.stringify(questionData),
+    });
+    return handleErrors(response);
+  },
+
+  // Удаление вопроса по ID
+  deleteQuestion: async (questionId) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/questions/${questionId}/`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+  },
+
+  // Получение вопроса по ID
+  getQuestionById: async (questionId) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/questions/${questionId}/`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+  },
+
+  // Обновление вопроса по ID
+  updateQuestion: async (questionId, questionData) => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/questions/${questionId}/`, {
+      method: 'PUT',
+      headers: getHeaders(true),
+      body: JSON.stringify(questionData),
+    });
+    return handleErrors(response);
+  },
+
+  // Получение всех вопросов
+  getAllQuestions: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/admin/questions/`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+  },
+};

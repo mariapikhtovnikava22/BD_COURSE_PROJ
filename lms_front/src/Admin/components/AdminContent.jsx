@@ -5,6 +5,7 @@ import RolesManagement from "../pages/RolesManagement";
 import LevelsManagement from "../pages/LelesManagement";
 import CategoryMaterialManagement from "../pages/CategoryMaterialManagement";
 import ModuleTopicManagement from "../pages/ModuleTopicManagement"
+import TestManagement from "../pages/TestManagement";
 // import CategoriesManagement from "../pages/admin/CategoriesManagement";
 
 const AdminContent = () => {
@@ -16,6 +17,7 @@ const AdminContent = () => {
         <Route path="/levels/" element={<LevelsManagement />} />
         <Route path="/categories/" element={<CategoryMaterialManagement />} />
         <Route path="/course/" element={<ModuleTopicManagement />} />
+        <Route path="/tests/" element={ <TestManagement /> } />
         {/* <Route path="/admin/roles" element={<RolesManagement />} />
         <Route path="/admin/levels" element={<LevelsManagement />} />
         <Route path="/admin/categories" element={<CategoriesManagement />} /> */}

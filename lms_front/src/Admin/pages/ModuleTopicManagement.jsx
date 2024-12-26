@@ -17,6 +17,7 @@ const ModuleTopicManagement = () => {
   const [currentTopicId, setCurrentTopicId] = useState(null); // ID темы для редактирования
   const [formError, setFormError] = useState(""); // Ошибка формы
   const [success, setSuccess] = useState(""); // Успех
+  const [selectedLevelId, setSelectedLevelId] = useState("");
 
   const fetchData = async () => {
     try {
@@ -59,6 +60,11 @@ const ModuleTopicManagement = () => {
     setShowTopicModal(true);
   };
 
+  const handleLevelFilterChange = (event) => {
+    setSelectedLevelId(event.target.value);
+  };
+
+
   const handleEditTopic = (topic) => {
     setCurrentModuleId(topic.module_id);
     setCurrentTopicId(topic.id);
@@ -82,19 +88,17 @@ const ModuleTopicManagement = () => {
   const handleEditModule = (module) => {
     console.log("Редактируемый модуль:", module);
   
-    // Находим level_id по level_name
-    const matchedLevel = levels.find((level) => level.name === module.level_name);
-  
     setCurrentModuleEditId(module.id); // Сохраняем ID модуля
     setNewModule({
       name: module.name,
       description: module.description,
-      level_id: matchedLevel ? matchedLevel.id : "", // Устанавливаем level_id или пустое значение
+      level_id: module.level_id || "", // Устанавливаем level_id напрямую
     });
     setFormError("");
     setSuccess("");
     setShowModuleModal(true);
   };
+  
   
   const handleDeleteModule = async (moduleId) => {
     if (window.confirm("Вы уверены, что хотите удалить модуль?")) {
@@ -121,15 +125,6 @@ const ModuleTopicManagement = () => {
         setModules((prevModules) =>
           prevModules.map((module) => (module.id === currentModuleEditId ? updatedModule : module))
         );
-  
-        // Обновление module_name у связанных тем
-        setTopics((prevTopics) =>
-          prevTopics.map((topic) =>
-            topic.module_name === modules.find((m) => m.id === currentModuleEditId)?.name
-              ? { ...topic, module_name: updatedModule.name }
-              : topic
-          )
-        );
       } else {
         // Добавление нового модуля
         const createdModule = await AdminModulesService.createModule(newModule);
@@ -153,18 +148,26 @@ const ModuleTopicManagement = () => {
       setFormError("Название темы обязательно");
       return;
     }
-
+  
     try {
+      let updatedTopic;
+  
       if (currentTopicId) {
         // Редактирование темы
-        const updatedTopic = await AdminTopicsService.updateTopic(currentTopicId, {
+        updatedTopic = await AdminTopicsService.updateTopic(currentTopicId, {
           ...newTopic,
           module_id: currentModuleId,
         });
-
+  
+        // Добавляем module_name вручную, сопоставляя с module_id
+        updatedTopic = {
+          ...updatedTopic,
+          module_name: modules.find((m) => m.id === updatedTopic.module_id)?.name || "",
+        };
+  
         setTopics((prevTopics) =>
           prevTopics.map((topic) =>
-            topic.id === currentTopicId ? { ...updatedTopic, module_name: updatedTopic.module_name } : topic
+            topic.id === currentTopicId ? updatedTopic : topic
           )
         );
       } else {
@@ -173,13 +176,15 @@ const ModuleTopicManagement = () => {
           ...newTopic,
           module_id: currentModuleId,
         });
-
-        setTopics((prevTopics) => [
-          ...prevTopics,
-          { ...createdTopic, module_name: modules.find((m) => m.id === currentModuleId)?.name },
-        ]);
+  
+        updatedTopic = {
+          ...createdTopic,
+          module_name: modules.find((m) => m.id === createdTopic.module_id)?.name || "",
+        };
+  
+        setTopics((prevTopics) => [...prevTopics, updatedTopic]);
       }
-
+  
       setSuccess("Тема успешно сохранена!");
       setTimeout(() => {
         setShowTopicModal(false);
@@ -190,92 +195,129 @@ const ModuleTopicManagement = () => {
       setFormError(error || "Не удалось сохранить тему");
     }
   };
+  
+  
+  const filteredModules = selectedLevelId
+  ? modules.filter((module) => module.level_id === parseInt(selectedLevelId))
+  : modules;
 
   return (
   <div>
     <h2 className="my-4">Программа курса</h2>
+    <div className="mb-4">
+        <label htmlFor="levelFilter">Фильтр по уровням:</label>
+        <select
+            id="levelFilter"
+            className="form-control"
+            value={selectedLevelId}
+            onChange={handleLevelFilterChange}
+        >
+            <option value="">Все уровни</option>
+            {levels.map((level) => (
+            <option key={level.id} value={level.id}>
+                {level.name}
+            </option>
+            ))}
+        </select>
+    </div>
     <div>
-      {modules.map((module) => (
+    {filteredModules.map((module) => (
         <div key={module.id} className="module mb-4">
-          <div className="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+            <div className="d-flex justify-content-between align-items-center p-3 bg-light rounded">
             <div>
-              <h5 className="mb-0">{module.name}</h5>
-              {module.description && <small className="text-muted">{module.description}</small>}
+                <h5 className="mb-0">{module.name}</h5>
+                {module.description && <small className="text-muted">{module.description}</small>}
+                <small className="text-muted d-block">
+                Уровень: {levels.find((level) => level.id === module.level_id)?.name || "Не указан"}
+                </small>
             </div>
             <div>
-            <button
+                <button
                 className="btn btn-sm me-2"
                 onClick={() => handleEditModule(module)}
                 title="Редактировать"
                 style={{ border: "none", background: "transparent", fontSize: "1rem" }}
-            >
+                >
                 ✏️
-            </button>
-            <button
+                </button>
+                <button
                 className="btn btn-sm me-2"
                 onClick={() => handleDeleteModule(module.id)}
                 title="Удалить"
                 style={{ border: "none", background: "transparent", fontSize: "1rem" }}
-            >
+                >
                 🗑️
-            </button>
-            <button
+                </button>
+                <button
                 className="btn  btn-sm"
                 onClick={() => toggleModule(module.id)}
                 title={expandedModuleId === module.id ? "Свернуть" : "Развернуть"}
                 style={{ border: "none", background: "transparent", fontSize: "1rem" }}
-            >
+                >
                 {expandedModuleId === module.id ? "🔼" : "🔽"}
-            </button>
+                </button>
+            </div>
             </div>
 
-          </div>
-
-          {expandedModuleId === module.id && (
+            {expandedModuleId === module.id && (
             <div className="topics mt-3 ps-4">
-              <h6>Темы:</h6>
-              <ul className="list-group">
+                <h5>Темы:</h5>
+                <ul className="list-group">
                 {getTopicsByModuleName(module.name).map((topic) => (
-                  <li key={topic.id} className="list-group-item d-flex justify-content-between align-items-center">
+                    <li key={topic.id} className="list-group-item d-flex justify-content-between align-items-center">
                     <div>
-                      <strong>{topic.name}</strong>
-                      {topic.description && <small className="text-muted d-block">{topic.description}</small>}
+                        <strong>{topic.name}</strong>
+                        {topic.description && <small className="text-muted d-block">{topic.description}</small>}
                     </div>
                     <div>
-                      <button
+                        <button
                         className="btn btn-primary btn-sm me-2"
                         onClick={() => handleEditTopic(topic)}
-                      >
+                        >
                         Редактировать
-                      </button>
-                      <button
+                        </button>
+                        <button
                         className="btn btn-danger btn-sm"
                         onClick={() => handleDeleteTopic(topic.id)}
-                      >
+                        >
                         Удалить
-                      </button>
+                        </button>
                     </div>
-                  </li>
+                    </li>
                 ))}
                 {getTopicsByModuleName(module.name).length === 0 && (
-                  <p className="text-muted">Темы отсутствуют</p>
+                    <p className="text-muted">Темы отсутствуют</p>
                 )}
-              </ul>
-              <button
+                </ul>
+                <button
                 className="btn btn-success mt-3"
                 onClick={() => handleAddTopic(module.id)}
-              >
+                >
                 Добавить тему
-              </button>
+                </button>
             </div>
-          )}
+            )}
         </div>
-      ))}
+        ))}
     </div>
 
-    <button className="btn btn-success mt-4" onClick={() => setShowModuleModal(true)}>
-      Добавить новый модуль
-    </button>
+    <button
+        className="btn btn-success mt-4"
+        onClick={() => {
+            setNewModule({
+            name: "",
+            description: "",
+            level_id: selectedLevelId || "", // Устанавливаем уровень из фильтра
+            });
+            setCurrentModuleEditId(null); // Убираем ID редактируемого модуля
+            setFormError(""); // Очищаем ошибки формы
+            setSuccess(""); // Сбрасываем сообщение об успехе
+            setShowModuleModal(true); // Открываем модальное окно
+        }}
+        >
+        Добавить новый модуль
+        </button>
+
 
     {/* Модальное окно для тем */}
     {showTopicModal && (
@@ -391,17 +433,17 @@ const ModuleTopicManagement = () => {
           <div className="mb-3">
             <label htmlFor="moduleLevel">Уровень</label>
             <select
-              id="moduleLevel"
-              className="form-control"
-              value={newModule.level_id || ""}
-              onChange={(e) => setNewModule({ ...newModule, level_name: e.target.value })}
-            >
-              <option value="">Выберите уровень</option>
-              {levels.map((level) => (
-                <option key={level.id} value={level.id}>
-                  {level.name}
-                </option>
-              ))}
+                id="moduleLevel"
+                className="form-control"
+                value={newModule.level_id || ""}
+                onChange={(e) => setNewModule({ ...newModule, level_id: e.target.value })}
+                >
+                <option value="">Выберите уровень</option>
+                {levels.map((level) => (
+                    <option key={level.id} value={level.id}>
+                    {level.name}
+                    </option>
+                ))}
             </select>
           </div>
 
