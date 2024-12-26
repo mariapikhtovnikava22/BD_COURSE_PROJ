@@ -123,9 +123,17 @@ export const userService = {
     });
     return handleErrors(response);
   },
-  SubmitTest: async (moduleId) => {
+  SubmitTest: async (moduleId, formatted) => {
     const response = await fetch(`${API_BASE_URL}/api/users/submittestmodule/${moduleId}`, {
       method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify(formatted),
+    });
+    return handleErrors(response);
+  },
+  UserProgress: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/users/progress`, {
+      method: "GET",
       headers: getHeaders(),
     });
     return handleErrors(response);

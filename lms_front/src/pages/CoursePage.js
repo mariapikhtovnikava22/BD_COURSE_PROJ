@@ -4,11 +4,10 @@ import React, { useState, useEffect } from "react";
 import { userService } from "../api"; 
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { AdminLevelsService } from "../api"; // Если нужно загружать уровни (доп. логика)
 
 const UserTestPage = () => {
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError]   = useState("");
   const [formError, setFormError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -25,7 +24,7 @@ const UserTestPage = () => {
   const [modules, setModules] = useState([]);   // [{id, name, description, topics: [...], moduleTest: {...}?}, ...]
   const [expandedModuleIds, setExpandedModuleIds] = useState([]); 
   // Ответы на тесты конкретных модулей:
-  // { [moduleId]: { [questionId]: selectedOptionId }, ... }
+  // В формате { [moduleId]: { [questionId]: selectedOptionId }, ... }
   const [moduleAnswers, setModuleAnswers] = useState({});
 
   // --------------------------------------------------------------------
@@ -35,14 +34,14 @@ const UserTestPage = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Запрашиваем у сервера — нужно ли вступительный тест (status="test"),
-        //   или уже можно показать модули (status="modules")
+        // Узнаём у сервера, нужно ли пройти вступительный тест (status="test"),
+        // или уже можно загрузить список модулей (status="modules")
         const response = await userService.getEntranceTestOrModules();
         setStatus(response.status);
 
         if (response.status === "test") {
           // Нужно пройти вступительный тест
-          setTest(response.test); // массив вопросов
+          setTest(response.test);
         } else if (response.status === "modules") {
           // Вступительный тест уже пройден => подгружаем модули
           const userModulesResponse = await userService.getUserModules();
@@ -60,18 +59,20 @@ const UserTestPage = () => {
   }, []);
 
   // --------------------------------------------------------------------
-  // 2) ЛОГИКА: вступительный тест
+  // 2) Логика вступительного теста
   // --------------------------------------------------------------------
+  // Изменение ответа в "answers"
   const handleAnswerChange = (questionId, optionId) => {
     setAnswers((prev) => ({ ...prev, [questionId]: optionId }));
   };
 
+  // Отправка вступительного теста
   const handleSubmitTest = async () => {
     setFormError("");
     setSuccess("");
 
     try {
-      // Преобразуем объект answers => массив [{question_id, selected_option_id}, ...]
+      // Преобразуем объект answers => массив { question_id, selected_option_id }
       const formattedAnswers = Object.entries(answers).map(([qId, optId]) => ({
         question_id: parseInt(qId, 10),
         selected_option_id: optId,
@@ -82,21 +83,20 @@ const UserTestPage = () => {
         return;
       }
 
-      // Отправляем результаты
+      // Отправляем результат
       const response = await userService.submitEntranceTest({ answers: formattedAnswers });
       setTestCompleted(true);
       setLevel(response.level || null);
       setSuccess("Вступительный тест успешно завершён!");
 
-      // Если нужно, подгружаем модули
+      // Подгружаем модули (после успешной отправки)
       const userModulesResponse = await userService.getUserModules();
       setModules(userModulesResponse.modules || []);
 
-      // Через 2 секунды переключаемся на статус "modules"
+      // Через 2 секунды переключаемся на status="modules"
       setTimeout(() => {
         setStatus("modules");
       }, 2000);
-
     } catch (err) {
       console.error("Ошибка отправки вступительного теста:", err);
       setFormError(err.message || "Не удалось отправить тест. Попробуйте снова.");
@@ -104,8 +104,9 @@ const UserTestPage = () => {
   };
 
   // --------------------------------------------------------------------
-  // 3) ЛОГИКА: раскрытие модулей и загрузка/отправка теста модуля
+  // 3) Логика раскрытия модулей + загрузка/прохождение теста модуля
   // --------------------------------------------------------------------
+  // Раскрытие / свёртывание модуля
   const handleToggleExpandModule = (moduleId) => {
     setExpandedModuleIds((prev) =>
       prev.includes(moduleId)
@@ -118,7 +119,7 @@ const UserTestPage = () => {
   const handleLoadModuleTest = async (moduleId) => {
     try {
       const moduleTestData = await userService.getModuleTest(moduleId);
-      // Добавляем поле moduleTest в соответствующий module
+      // Добавляем test в объект нужного модуля
       setModules((prevModules) =>
         prevModules.map((mod) =>
           mod.id === moduleId ? { ...mod, moduleTest: moduleTestData } : mod
@@ -130,7 +131,7 @@ const UserTestPage = () => {
     }
   };
 
-  // Выбор варианта ответа в тесте модуля
+  // Выбор ответа в тесте модуля
   const handleModuleTestAnswerChange = (moduleId, questionId, optionId) => {
     setModuleAnswers((prev) => ({
       ...prev,
@@ -146,8 +147,8 @@ const UserTestPage = () => {
     setFormError("");
     setSuccess("");
 
-    const currentAnswers = moduleAnswers[moduleId] || {};
-    const formatted = Object.entries(currentAnswers).map(([qId, optId]) => ({
+    const currentModuleAnswers = moduleAnswers[moduleId] || {};
+    const formatted = Object.entries(currentModuleAnswers).map(([qId, optId]) => ({
       question_id: parseInt(qId, 10),
       selected_option_id: optId,
     }));
@@ -158,17 +159,19 @@ const UserTestPage = () => {
     }
 
     try {
-      console.log(formatted);
+      console.log(formatted)
+      // Отправляем результаты теста модуля
       const response = await userService.SubmitTest(moduleId, { answers: formatted });
       setSuccess(`Тест модуля #${moduleId} успешно завершён!`);
 
-      // Можно убирать moduleTest из данных
+      // При желании удаляем moduleTest, чтобы больше не показывать вопросы
       setModules((prevModules) =>
         prevModules.map((mod) =>
-          mod.id === moduleId ? { ...mod, moduleTest: null } : mod
+          mod.id === moduleId
+            ? { ...mod, moduleTest: null }
+            : mod
         )
       );
-      // Или можно обновить прогресс, если нужно.
     } catch (err) {
       console.error("Ошибка при отправке теста модуля:", err);
       setFormError(err.message || "Не удалось отправить тест модуля. Попробуйте снова.");
@@ -185,8 +188,7 @@ const UserTestPage = () => {
     <div className="d-flex flex-column min-vh-100" style={{ backgroundColor: "#F7F3EF" }}>
       <Header />
       <main className="flex-grow-1 p-5">
-        
-        {/* 1) Вступительный тест (если status === 'test' и он не завершён) */}
+        {/* Вступительный тест (если нужен) */}
         {status === "test" && !testCompleted && (
           <div>
             <h2 className="mb-4">Пройдите тест для определения уровня знаний!</h2>
@@ -222,18 +224,27 @@ const UserTestPage = () => {
                 Завершить тест
               </button>
             </form>
+            {/* Ошибки / успех для вступительного теста */}
             {formError && <div className="alert alert-danger mt-3">{formError}</div>}
             {success && <div className="alert alert-success mt-3">{success}</div>}
           </div>
         )}
 
-        {/* 2) Модули (если статус === 'modules') */}
+        {/* Если тест завершён, показываем уведомление */}
+        {testCompleted && (
+          <div className="alert alert-success mt-4">
+            <h4>Вступительный тест завершён!</h4>
+            <p>Ваш уровень: {level ?? "Неизвестно"}</p>
+          </div>
+        )}
+
+        {/* Список модулей (status === "modules") */}
         {status === "modules" && (
           <div>
             <h2 className="mb-4">Ваши доступные модули</h2>
             {modules.map((module) => {
               const isExpanded = expandedModuleIds.includes(module.id);
-              const moduleTestData = module.moduleTest; // если был загружен
+              const moduleTestData = module.moduleTest; // Тест модуля, если мы его загрузили
               const currentModuleAnswers = moduleAnswers[module.id] || {};
 
               return (
@@ -247,19 +258,21 @@ const UserTestPage = () => {
                       {isExpanded ? "Свернуть" : "Развернуть"}
                     </button>
                   </div>
+
                   <div className="card-body">
                     <p>{module.description}</p>
 
-                    {/* Если модуль "раскрыт", показываем темы + тест модуля */}
+                    {/* Если модуль "раскрыт" */}
                     {isExpanded && (
                       <div>
                         <h6>Темы:</h6>
-                        {module.topics?.length ? (
+                        {module.topics && module.topics.length > 0 ? (
                           module.topics.map((topic) => (
                             <div key={topic.id} className="card mb-3">
                               <div className="card-body">
                                 <strong>{topic.name}</strong>
                                 <p>{topic.description}</p>
+                                {/* Тут можно делать дополнительные вложенные раскрытия, если нужно */}
                               </div>
                             </div>
                           ))
@@ -267,7 +280,7 @@ const UserTestPage = () => {
                           <p>Темы отсутствуют.</p>
                         )}
 
-                        {/* Тест модуля (если уже загружен) */}
+                        {/* Если тест модуля уже подгружен */}
                         {moduleTestData ? (
                           <div className="mt-3">
                             <h4>{moduleTestData.name}</h4>
@@ -275,12 +288,7 @@ const UserTestPage = () => {
                               <div key={q.id} className="card mb-3">
                                 <div className="card-header">
                                   <strong>{q.name}</strong>
-                                  {/* topic_name, если есть */}
-                                  {q.topic_name && (
-                                    <span className="ms-2 text-muted">
-                                      (Тема: {q.topic_name})
-                                    </span>
-                                  )}
+                                  {/* Если нужно, можно вывести q.topic_name */}
                                 </div>
                                 <ul className="list-group list-group-flush">
                                   {q.options.map((opt) => (
@@ -291,13 +299,7 @@ const UserTestPage = () => {
                                         value={opt.id}
                                         checked={currentModuleAnswers[q.id] === opt.id}
                                         onChange={() =>
-                                          setModuleAnswers((prev) => ({
-                                            ...prev,
-                                            [module.id]: {
-                                              ...(prev[module.id] || {}),
-                                              [q.id]: opt.id
-                                            },
-                                          }))
+                                          handleModuleTestAnswerChange(module.id, q.id, opt.id)
                                         }
                                         className="form-check-input me-2"
                                       />
@@ -314,6 +316,10 @@ const UserTestPage = () => {
                             >
                               Завершить тест модуля
                             </button>
+
+                            {/* Ошибки / успех при отправке теста модуля */}
+                            {formError && <div className="alert alert-danger mt-3">{formError}</div>}
+                            {success && <div className="alert alert-success mt-3">{success}</div>}
                           </div>
                         ) : (
                           <button
@@ -331,15 +337,8 @@ const UserTestPage = () => {
             })}
           </div>
         )}
-
-        {/* Если вступительный тест завершён — сообщение */}
-        {testCompleted && (
-          <div className="alert alert-success mt-4">
-            <h4>Вступительный тест завершён!</h4>
-            <p>Ваш уровень: {level ?? "Неизвестно"}</p>
-          </div>
-        )}
       </main>
+
       <Footer />
     </div>
   );

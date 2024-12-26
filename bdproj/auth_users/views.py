@@ -136,7 +136,6 @@ class UserInfoAPIView(APIView):
     
     @isAuthorized
     def put(self, request):
-        
         user_id = request.user_id
         data = request.data
 

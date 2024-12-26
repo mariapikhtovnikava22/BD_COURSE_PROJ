@@ -466,8 +466,8 @@ class SubmitModuleTestAPIView(APIView):
 
         user_id = request.user_id
         data = request.data
-        print(request)
-        answers = data.get("answers", [])
+        print(request.data.get("answers"))
+        answers =  request.data.get("answers", [])
 
         if not answers:
             return JsonResponse({"error": "No answers provided"}, status=400)
@@ -695,4 +695,67 @@ class SubmitModuleTestAPIView(APIView):
 
         except Exception as e:
             print("Error in SubmitModuleTest:", e)
+            return JsonResponse({"error": str(e)}, status=500)
+        
+
+class UserProgressAPIView(APIView):
+
+    @isAuthorized
+    def get(self, request):
+        """
+        Возвращает прогресс по курсу и тестам для текущего пользователя.
+        """
+        user_id = request.user_id  # Получаем ID авторизованного пользователя
+
+        try:
+            # Запрос для получения прогресса по курсу
+            course_progress_query = """
+                SELECT 
+                    is_complite_course, 
+                    completion_percentage, 
+                    modules_complite
+                FROM CourseProgress
+                WHERE user_id = %s;
+            """
+
+            # Запрос для получения прогресса по тестам
+            tests_progress_query = """
+                SELECT 
+                    test_id, 
+                    is_passed, 
+                    attempts, 
+                    correct_answers
+                FROM UserTestProgress
+                WHERE user_id = %s;
+            """
+
+            with connection.cursor() as cursor:
+                # Получаем прогресс по курсу
+                cursor.execute(course_progress_query, [user_id])
+                course_progress_data = cursor.fetchone()
+                course_progress = {
+                    "is_complite_course": course_progress_data[0],
+                    "completion_percentage": course_progress_data[1],
+                    "modules_complite": course_progress_data[2],
+                } if course_progress_data else None
+
+                # Получаем прогресс по тестам
+                cursor.execute(tests_progress_query, [user_id])
+                tests_progress = [
+                    {
+                        "test_id": row[0],
+                        "is_passed": bool(row[1]),
+                        "attempts": row[2],
+                        "correct_answers": row[3],
+                    }
+                    for row in cursor.fetchall()
+                ]
+
+            # Возвращаем объединённые данные
+            return JsonResponse({
+                "course_progress": course_progress,
+                "tests_progress": tests_progress,
+            }, status=200)
+
+        except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
