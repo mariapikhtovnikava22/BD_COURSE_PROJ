@@ -46,6 +46,7 @@ const getHeaders = (isJSON = true) => {
   if (isJSON) {
     headers["Content-Type"] = "application/json";
   }
+  console.log(headers);
   return headers;
 };
 
@@ -84,6 +85,24 @@ export const userService = {
       method: 'PUT',
       headers: getHeaders(true),
       body: JSON.stringify(formData),
+    });
+    return handleErrors(response);
+
+  },
+
+  getEntranceTestOrModules: async () => {
+    const response = await fetch(`${API_BASE_URL}/api/users/test/`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleErrors(response);
+
+  },
+  submitEntranceTest: async (answers) => {
+    const response = await fetch(`${API_BASE_URL}/api/users/test/`, {
+      method: 'POST',
+      headers: getHeaders(true),
+      body: JSON.stringify(answers),
     });
     return handleErrors(response);
 

@@ -4,6 +4,7 @@ import Home from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import MePage from "./pages/MePage";
+import UserTestPage from "./pages/CoursePage";
 import "./styles/App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { auth } from './auth'; 
@@ -51,6 +52,10 @@ const App = () => {
         <Route path="/userprofile" element={ 
           <PrivateRoute>
               <MePage />
+          </PrivateRoute>} />
+          <Route path="/courses" element={ 
+          <PrivateRoute>
+              <UserTestPage />
           </PrivateRoute>} />
         <Route path="/admin/*" element = {
           <AdminRoute> 

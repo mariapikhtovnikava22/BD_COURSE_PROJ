@@ -84,7 +84,7 @@ const Header = () => {
                 {isAuthenticated && (
                   <>
                     <Link
-                      to="/courses/my"
+                      to="/courses"
                       className="link me-3"
                       style={linkStyle('/courses/my')}
                     >
