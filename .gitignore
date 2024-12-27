@@ -6,7 +6,7 @@ __pycache__/
 # C extensions
 *.so
 .idea
-lms/media
+bdproj/media
 # Distribution / packaging
 .Python
 build/
