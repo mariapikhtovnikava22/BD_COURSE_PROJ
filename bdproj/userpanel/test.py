@@ -2,7 +2,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from rest_framework import status
 
-class AdminUserAPITest(TestCase):
+class UserPanelAPITest(TestCase):
     def setUp(self):
         self.client = Client()
         self.user_list_url = reverse('admin_users')
@@ -13,7 +13,7 @@ class AdminUserAPITest(TestCase):
         self.assertTrue(response.status_code in [status.HTTP_200_OK, status.HTTP_401_UNAUTHORIZED])
 
     def test_get_user_detail(self):
-        user_id = 1  
+        user_id = 1  # Тестовый ID
         response = self.client.get(self.user_detail_url(user_id))
         self.assertTrue(response.status_code in [status.HTTP_200_OK, status.HTTP_404_NOT_FOUND, status.HTTP_401_UNAUTHORIZED])
 
@@ -56,3 +56,4 @@ class AdminUserAPITest(TestCase):
         user_id = 9999  
         response = self.client.delete(self.user_detail_url(user_id))
         self.assertTrue(response.status_code in [status.HTTP_404_NOT_FOUND, status.HTTP_401_UNAUTHORIZED])
+

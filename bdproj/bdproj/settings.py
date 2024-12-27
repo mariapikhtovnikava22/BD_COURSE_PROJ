@@ -16,6 +16,9 @@ from rest_framework.settings import api_settings
 from django.conf import settings
 from django.conf.urls.static import static
 
+
+#print("--------------------------1111111111111111111111111111-------------------------")
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -52,7 +55,11 @@ class DisableMigrations:
     def __getitem__(self, item):
         return None
 
-MIGRATION_MODULES = DisableMigrations()
+# MIGRATION_MODULES = DisableMigrations()
+
+MIGRATION_MODULES = {
+    app: None for app in INSTALLED_APPS
+}
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -146,3 +153,4 @@ CORS_ORIGIN_ALLOW_ALL = True
 CORS_ORIGIN_ALLOW_ALL = True
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
+
